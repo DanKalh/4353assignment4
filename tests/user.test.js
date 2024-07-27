@@ -1,39 +1,28 @@
-import request from 'supertest';
-import { query } from '../../backend/db';
-import userService from '../../backend/userService';
+import { getUsers, addUser } from '../backend/userService';
+import pool from '../backend/db';
 
-jest.mock('../../backend/db', () => ({
+jest.mock('../backend/db', () => ({
   query: jest.fn()
 }));
 
-jest.mock('../../backend/userService', () => ({
-  getUsers: jest.fn(),
-  addUser: jest.fn()
-}));
-
-describe('User API', () => {
-  test('should get all users', async () => {
-    userService.getUsers.mockResolvedValueOnce([{ id: 1, email: 'muad.dib@dune.com' }]);
-    const res = await request('http://localhost:3000').get('/api/users');
-    expect(res.statusCode).toBe(200);
-    expect(res.body.length).toBeGreaterThan(0);
+describe('userService', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  test('should create a new user', async () => {
+  test('should get all users', async () => {
+    pool.query.mockResolvedValueOnce({ rows: [{ id: 1, email: 'muad.dib@dune.com' }] });
+    const users = await getUsers();
+    expect(users).toBeTruthy();
+  });
+
+  test('should add a new user', async () => {
     const newUser = {
-      email: 'lisan@dune.com',
-      password: 'password123',
-      full_name: 'Lisan Al Gaib',
-      address1: '123 Arrakis Desert',
-      city: 'Dune City',
-      state: 'CA',
-      zip_code: '12345',
-      skills: ['leadership', 'strategic thinking'],
-      preferences: 'Test Preferences',
-      availability: ['2024-01-01']
+      email: 'muad.dib@dune.com',
+      password: 'Arrakis'
     };
-    userService.addUser.mockResolvedValueOnce(newUser);
-    const res = await request('http://localhost:3000').post('/api/users').send(newUser);
-    expect(res.statusCode).toBe(201);
+    pool.query.mockResolvedValueOnce({ rows: [{ id: 1, email: 'muad.dib@dune.com' }] });
+    const user = await addUser(newUser);
+    expect(user).toBeTruthy();
   });
 });

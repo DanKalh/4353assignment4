@@ -1,3 +1,5 @@
+//not actual, use locally hosted info
+
 import { Pool } from 'pg';
 
 const pool = new Pool({

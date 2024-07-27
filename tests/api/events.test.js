@@ -1,35 +1,39 @@
+// tests/api/events.test.js
 import request from 'supertest';
-import { query } from '../../backend/db';
-import eventService from '../../backend/eventService';
+import { createServer } from 'http';
+import next from 'next';
 
-jest.mock('../../backend/db', () => ({
-  query: jest.fn()
-}));
+const app = next({ dev: true });
+const handle = app.getRequestHandler();
+let server;
 
-jest.mock('../../backend/eventService', () => ({
-  getEvents: jest.fn(),
-  addEvent: jest.fn()
-}));
+beforeAll(async () => {
+  await app.prepare();
+  server = createServer((req, res) => {
+    handle(req, res);
+  });
+  server.listen(3000);
+});
+
+afterAll((done) => {
+  server.close(done);
+});
 
 describe('Event API', () => {
-  test('should get all events', async () => {
-    eventService.getEvents.mockResolvedValueOnce([{ id: 1, event_name: 'Test Event' }]);
-    const res = await request('http://localhost:3000').get('/api/events');
-    expect(res.statusCode).toBe(200);
-    expect(res.body.length).toBeGreaterThan(0);
+  it('should get all events', async () => {
+    const res = await request(server).get('/api/events');
+    expect(res.statusCode).toEqual(200);
+    expect(res.body).toHaveProperty('events');
   });
 
-  test('should create a new event', async () => {
-    const newEvent = {
-      event_name: 'Test Event',
-      event_description: 'Description of test event',
-      location: 'Test Location',
-      required_skills: ['Skill1', 'Skill2'],
-      urgency: 'high',
-      event_date: '2024-01-01'
-    };
-    eventService.addEvent.mockResolvedValueOnce(newEvent);
-    const res = await request('http://localhost:3000').post('/api/events').send(newEvent);
-    expect(res.statusCode).toBe(201);
+  it('should create a new event', async () => {
+    const res = await request(server)
+      .post('/api/events')
+      .send({
+        name: 'New Event',
+        date: '2024-08-01'
+      });
+    expect(res.statusCode).toEqual(201);
+    expect(res.body).toHaveProperty('event');
   });
 });

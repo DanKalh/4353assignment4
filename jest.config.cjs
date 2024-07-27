@@ -1,10 +1,13 @@
+// jest.config.cjs
 module.exports = {
-  setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
   testEnvironment: 'node',
   transform: {
-    '^.+\\.[tj]sx?$': 'babel-jest',
+    '^.+\\.(js|jsx|ts|tsx)$': 'babel-jest',
   },
+  setupFilesAfterEnv: ['./jest.setup.js'],
   moduleNameMapper: {
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+    '^@/components/(.*)$': '<rootDir>/components/$1',
+    '^@/pages/(.*)$': '<rootDir>/pages/$1',
+    '^@/utils/(.*)$': '<rootDir>/utils/$1',
   },
 };

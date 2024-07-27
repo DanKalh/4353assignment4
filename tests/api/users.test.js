@@ -1,39 +1,39 @@
+// tests/api/users.test.js
 import request from 'supertest';
-import { query } from '../../backend/db';
-import userService from '../../backend/userService';
+import { createServer } from 'http';
+import next from 'next';
 
-jest.mock('../../backend/db', () => ({
-  query: jest.fn()
-}));
+const app = next({ dev: true });
+const handle = app.getRequestHandler();
+let server;
 
-jest.mock('../../backend/userService', () => ({
-  getUsers: jest.fn(),
-  addUser: jest.fn()
-}));
+beforeAll(async () => {
+  await app.prepare();
+  server = createServer((req, res) => {
+    handle(req, res);
+  });
+  server.listen(3000);
+});
+
+afterAll((done) => {
+  server.close(done);
+});
 
 describe('User API', () => {
-  test('should get all users', async () => {
-    userService.getUsers.mockResolvedValueOnce([{ id: 1, email: 'muad.dib@dune.com' }]);
-    const res = await request('http://localhost:3000').get('/api/users');
-    expect(res.statusCode).toBe(200);
-    expect(res.body.length).toBeGreaterThan(0);
+  it('should get all users', async () => {
+    const res = await request(server).get('/api/users');
+    expect(res.statusCode).toEqual(200);
+    expect(res.body).toHaveProperty('users');
   });
 
-  test('should create a new user', async () => {
-    const newUser = {
-      email: 'lisan@dune.com',
-      password: 'password123',
-      full_name: 'Lisan Al Gaib',
-      address1: '123 Arrakis Desert',
-      city: 'Dune City',
-      state: 'CA',
-      zip_code: '12345',
-      skills: ['leadership', 'strategic thinking'],
-      preferences: 'Test Preferences',
-      availability: ['2024-01-01']
-    };
-    userService.addUser.mockResolvedValueOnce(newUser);
-    const res = await request('http://localhost:3000').post('/api/users').send(newUser);
-    expect(res.statusCode).toBe(201);
+  it('should create a new user', async () => {
+    const res = await request(server)
+      .post('/api/users')
+      .send({
+        email: 'test@example.com',
+        password: 'password123'
+      });
+    expect(res.statusCode).toEqual(201);
+    expect(res.body).toHaveProperty('user');
   });
 });

@@ -1,31 +1,40 @@
+// tests/api/history.test.js
 import request from 'supertest';
-import { query } from '../../backend/db';
-import historyService from '../../backend/historyService';
+import { createServer } from 'http';
+import next from 'next';
 
-jest.mock('../../backend/db', () => ({
-  query: jest.fn()
-}));
+const app = next({ dev: true });
+const handle = app.getRequestHandler();
+let server;
 
-jest.mock('../../backend/historyService', () => ({
-  addVolunteerHistory: jest.fn()
-}));
+beforeAll(async () => {
+  await app.prepare();
+  server = createServer((req, res) => {
+    handle(req, res);
+  });
+  server.listen(3000);
+});
+
+afterAll((done) => {
+  server.close(done);
+});
 
 describe('History API', () => {
-  test('should get all history records', async () => {
-    historyService.addVolunteerHistory.mockResolvedValueOnce([{ id: 1, volunteer_id: 1, event_id: 1, participation_status: 'attended' }]);
-    const res = await request('http://localhost:3000').get('/api/history');
-    expect(res.statusCode).toBe(200);
-    expect(res.body.length).toBeGreaterThan(0);
+  it('should get all history records', async () => {
+    const res = await request(server).get('/api/history');
+    expect(res.statusCode).toEqual(200);
+    expect(res.body).toHaveProperty('history');
   });
 
-  test('should create a new history record', async () => {
-    const newRecord = {
-      volunteer_id: 1,
-      event_id: 1,
-      participation_status: 'attended'
-    };
-    historyService.addVolunteerHistory.mockResolvedValueOnce(newRecord);
-    const res = await request('http://localhost:3000').post('/api/history').send(newRecord);
-    expect(res.statusCode).toBe(201);
+  it('should create a new history record', async () => {
+    const res = await request(server)
+      .post('/api/history')
+      .send({
+        volunteer_id: 1,
+        event_id: 2,
+        status: 'participated'
+      });
+    expect(res.statusCode).toEqual(201);
+    expect(res.body).toHaveProperty('history');
   });
 });

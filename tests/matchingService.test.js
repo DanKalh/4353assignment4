@@ -1,14 +1,24 @@
-import { matchVolunteersToEvents } from '../backend/matchingService';
-import { query } from '../backend/db';
+// tests/matchingService.test.js
+import { matchVolunteerToEvent } from '../backend/matchingService';
 
 jest.mock('../backend/db', () => ({
   query: jest.fn()
 }));
 
+const pool = require('../backend/db');
+
 describe('matchingService', () => {
-  test('should match volunteers to events', async () => {
-    // Mock implementation of your matching logic
-    const result = await matchVolunteersToEvents();
-    expect(result).toBeTruthy();
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('should match volunteer to event', async () => {
+    pool.query.mockResolvedValueOnce({ rows: [{ volunteer_id: 1, event_id: 2 }] });
+    const result = await matchVolunteerToEvent(1, 2);
+    expect(result).toEqual({ volunteer_id: 1, event_id: 2 });
+    expect(pool.query).toHaveBeenCalledWith(
+      'INSERT INTO volunteer_history (volunteer_id, event_id) VALUES ($1, $2) RETURNING *',
+      [1, 2]
+    );
   });
 });

@@ -1,31 +1,39 @@
+// tests/api/notifications.test.js
 import request from 'supertest';
-import { query } from '../../backend/db';
-import notificationService from '../../backend/notificationService';
+import { createServer } from 'http';
+import next from 'next';
 
-jest.mock('../../backend/db', () => ({
-  query: jest.fn()
-}));
+const app = next({ dev: true });
+const handle = app.getRequestHandler();
+let server;
 
-jest.mock('../../backend/notificationService', () => ({
-  getNotifications: jest.fn(),
-  addNotification: jest.fn()
-}));
+beforeAll(async () => {
+  await app.prepare();
+  server = createServer((req, res) => {
+    handle(req, res);
+  });
+  server.listen(3000);
+});
+
+afterAll((done) => {
+  server.close(done);
+});
 
 describe('Notification API', () => {
-  test('should get all notifications', async () => {
-    notificationService.getNotifications.mockResolvedValueOnce([{ id: 1, message: 'Arrakis Dune Desert Planet' }]);
-    const res = await request('http://localhost:3000').get('/api/notifications');
-    expect(res.statusCode).toBe(200);
-    expect(res.body.length).toBeGreaterThan(0);
+  it('should get all notifications', async () => {
+    const res = await request(server).get('/api/notifications');
+    expect(res.statusCode).toEqual(200);
+    expect(res.body).toHaveProperty('notifications');
   });
 
-  test('should create a new notification', async () => {
-    const newNotification = {
-      volunteer_id: 1,
-      message: 'The spice must flow'
-    };
-    notificationService.addNotification.mockResolvedValueOnce(newNotification);
-    const res = await request('http://localhost:3000').post('/api/notifications').send(newNotification);
-    expect(res.statusCode).toBe(201);
+  it('should create a new notification', async () => {
+    const res = await request(server)
+      .post('/api/notifications')
+      .send({
+        title: 'New Notification',
+        content: 'Notification content'
+      });
+    expect(res.statusCode).toEqual(201);
+    expect(res.body).toHaveProperty('notification');
   });
 });
